@@ -170,7 +170,7 @@
 <body>
   <div class="card">
     <h1>FakeAuth</h1>
-    <p class="subtitle">Simulasi multi-account login seperti Google (front-end only).</p>
+    <p class="subtitle">Multi-account login ala Google (dipakai oleh iOS SDK dan Web SDK).</p>
 
     <div id="choose-section">
       <div class="section-title">Choose an account</div>
@@ -192,7 +192,8 @@
       <button type="submit" class="primary">Continue</button>
       <div id="error" class="error"></div>
       <div class="small">
-        Setelah login, kami akan redirect ke <code>redirect_uri</code> dengan <code>id_token</code> di hash URL.
+        Setelah login / pilih account, kami akan redirect ke
+        <code>redirect_uri</code> dengan <code>id_token</code> di URL hash.
       </div>
     </form>
   </div>
@@ -233,7 +234,7 @@
         existing.lastUsedAt = now;
       } else {
         list.push({
-          id: normalized,
+          id: normalized,        // di real world ini biasanya id unik
           username: normalized,
           lastUsedAt: now
         });
@@ -258,15 +259,15 @@
         iat: Math.floor(Date.now() / 1000),
         iss: window.location.origin
       };
-      return btoa(JSON.stringify(payload));
+      return btoa(JSON.stringify(payload)); // base64 JSON, bukan JWT beneran
     }
 
     function completeLogin(username) {
       const { redirectUri, state } = getQueryParams();
       const errorEl = document.getElementById("error");
-      if (!redirectUri || redirectUri === "null") {
-        errorEl.textContent =
-          "redirect_uri tidak ada atau null. Pastikan halaman ini dibuka lewat client-app.";
+
+      if (!redirectUri) {
+        errorEl.textContent = "redirect_uri tidak ada. Harus dikirim oleh client (iOS/Web).";
         return;
       }
       if (!username) {
@@ -275,11 +276,15 @@
       }
 
       const idToken = createFakeIdToken(username.trim());
+
       const redirectUrl =
         redirectUri +
         "#id_token=" + encodeURIComponent(idToken) +
         "&state=" + encodeURIComponent(state || "");
 
+      // ⬇️ Ini yang akan ditangkap oleh:
+      // - Web (via callback.html + postMessage)
+      // - iOS (via ASWebAuthenticationSession)
       window.location.href = redirectUrl;
     }
 
@@ -347,6 +352,7 @@
 
       renderAccounts();
 
+      // submit form (new login)
       loginForm.addEventListener("submit", function (e) {
         e.preventDefault();
         errorEl.textContent = "";
@@ -358,7 +364,7 @@
         }
 
         upsertAccount(username);
-        completeLogin(username);
+        completeLogin(username); // 🔥 langsung callback ke redirect_uri
       });
 
       useAnotherBtn.addEventListener("click", function () {
@@ -370,6 +376,7 @@
         renderAccounts();
       });
 
+      // klik account di list
       accountsContainer.addEventListener("click", function (e) {
         const removeUsername = e.target.dataset.removeUsername;
         if (removeUsername) {
@@ -387,8 +394,8 @@
 
         const username = btn.dataset.username;
         if (username) {
-          upsertAccount(username);
-          completeLogin(username);
+          upsertAccount(username); // update lastUsedAt
+          completeLogin(username); // 🔥 langsung callback ke SDK (redirect_uri)
         }
       });
     });

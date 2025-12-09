@@ -6,6 +6,8 @@
 </head>
 <body>
   <script>
+    const CLIENT_ORIGIN = "https://your-client-app.com"; // TODO: ganti sesuai origin client
+
     function parseHash() {
       const hash = window.location.hash.startsWith("#")
         ? window.location.hash.substring(1)
@@ -27,7 +29,8 @@
     }
 
     (function () {
-      const { idToken } = parseHash();
+      const { idToken, state } = parseHash();
+
       if (!window.opener) {
         document.body.innerText = "No opener window. This callback is intended to be opened via popup.";
         return;
@@ -37,7 +40,7 @@
         window.opener.postMessage({
           type: "FAKEAUTH_RESULT",
           error: "id_token tidak ditemukan"
-        }, "*");
+        }, CLIENT_ORIGIN);
         return;
       }
 
@@ -46,18 +49,19 @@
         window.opener.postMessage({
           type: "FAKEAUTH_RESULT",
           error: "id_token invalid"
-        }, "*");
+        }, CLIENT_ORIGIN);
         return;
       }
 
       window.opener.postMessage({
         type: "FAKEAUTH_RESULT",
         idToken: idToken,
+        state: state,
         user: {
           sub: payload.sub,
           name: payload.name
         }
-      }, "*");
+      }, CLIENT_ORIGIN);
     })();
   </script>
 </body>
