@@ -279,7 +279,7 @@
 
       const redirectUrl =
         redirectUri +
-        "#id_token=" + encodeURIComponent(idToken) +
+        "?id_token=" + encodeURIComponent(idToken) +
         "&state=" + encodeURIComponent(state || "");
 
       // ⬇️ Ini yang akan ditangkap oleh:
