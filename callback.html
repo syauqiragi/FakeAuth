@@ -6,63 +6,76 @@
 </head>
 <body>
   <script>
-    const CLIENT_ORIGIN = "https://fake-auth-seven.vercel.app";
-
-    function parseHash() {
-      const hash = window.location.hash.startsWith("#")
-        ? window.location.hash.substring(1)
-        : window.location.hash;
+  function parseParams() {
+    // 1. Coba dari hash dulu (#id_token=...)
+    let hash = window.location.hash;
+    if (hash && hash.startsWith("#")) {
+      hash = hash.substring(1);
       const params = new URLSearchParams(hash);
+      const idToken = params.get("id_token");
+      const state = params.get("state");
+      if (idToken) {
+        return { idToken, state };
+      }
+    }
+
+    // 2. Kalau di hash tidak ada, coba dari query (?id_token=...)
+    const search = window.location.search;
+    if (search && search.startsWith("?")) {
+      const params = new URLSearchParams(search.substring(1));
       return {
         idToken: params.get("id_token"),
         state: params.get("state")
       };
     }
 
-    function decodeIdToken(idToken) {
-      try {
-        const json = atob(idToken);
-        return JSON.parse(json);
-      } catch (e) {
-        return null;
-      }
+    return { idToken: null, state: null };
+  }
+
+  function decodeIdToken(idToken) {
+    try {
+      const json = atob(idToken);
+      return JSON.parse(json);
+    } catch (e) {
+      return null;
+    }
+  }
+
+  (function () {
+    const { idToken, state } = parseParams();
+    if (!window.opener) {
+      document.body.innerText = "No opener window. This callback is intended to be opened via popup.";
+      return;
     }
 
-    (function () {
-      const { idToken, state } = parseHash();
-
-      if (!window.opener) {
-        document.body.innerText = "No opener window. This callback is intended to be opened via popup.";
-        return;
-      }
-
-      if (!idToken) {
-        window.opener.postMessage({
-          type: "FAKEAUTH_RESULT",
-          error: "id_token tidak ditemukan"
-        }, CLIENT_ORIGIN);
-        return;
-      }
-
-      const payload = decodeIdToken(idToken);
-      if (!payload) {
-        window.opener.postMessage({
-          type: "FAKEAUTH_RESULT",
-          error: "id_token invalid"
-        }, CLIENT_ORIGIN);
-        return;
-      }
-
+    if (!idToken) {
       window.opener.postMessage({
         type: "FAKEAUTH_RESULT",
-        idToken: idToken,
-        state: state,
-        user: {
-          sub: payload.sub,
-          name: payload.name
-        }
-      }, CLIENT_ORIGIN);
-    })();
-  </script>
+        error: "id_token tidak ditemukan"
+      }, "https://fake-auth-seven.vercel.app");
+      return;
+    }
+
+    const payload = decodeIdToken(idToken);
+    if (!payload) {
+      window.opener.postMessage({
+        type: "FAKEAUTH_RESULT",
+        error: "id_token invalid"
+      }, "https://fake-auth-seven.vercel.app");
+      return;
+    }
+
+    window.opener.postMessage({
+      type: "FAKEAUTH_RESULT",
+      idToken: idToken,
+      state: state,
+      user: {
+        sub: payload.sub,
+        name: payload.name
+      }
+    }, "https://fake-auth-seven.vercel.app");
+  })();
+</script>
+
 </body>
 </html>
