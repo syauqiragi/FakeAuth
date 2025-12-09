@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Client App - Multi Account Demo</title>
+  <style>
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      background: #f9fafb;
+      margin: 0;
+    }
+    .card {
+      background: white;
+      padding: 24px;
+      border-radius: 16px;
+      box-shadow: 0 18px 40px rgba(15,23,42,0.16);
+      width: 380px;
+      text-align: center;
+    }
+    h1 {
+      margin: 0 0 8px 0;
+    }
+    p {
+      margin: 0 0 16px 0;
+      color: #6b7280;
+      font-size: 14px;
+    }
+    button {
+      margin-top: 10px;
+      padding: 10px 16px;
+      border-radius: 999px;
+      border: none;
+      cursor: pointer;
+      font-weight: 500;
+      font-size: 14px;
+    }
+    #login-btn {
+      background: #111827;
+      color: white;
+    }
+    #login-btn span.icon {
+      background: white;
+      color: #111827;
+      width: 18px;
+      height: 18px;
+      border-radius: 999px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      font-weight: 700;
+      margin-right: 6px;
+    }
+    #logout-btn {
+      background: #e5e7eb;
+      color: #374151;
+      margin-left: 8px;
+    }
+    .user-info {
+      margin-top: 16px;
+      padding: 10px;
+      background: #f3f4f6;
+      border-radius: 12px;
+      font-size: 14px;
+      color: #374151;
+      text-align: left;
+    }
+    .label {
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+      color: #9ca3af;
+      margin-bottom: 4px;
+    }
+    .error {
+      color: #b91c1c;
+      margin-top: 12px;
+      font-size: 13px;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>Client App</h1>
+    <p>Demo “Login with FakeAuth” dengan multi account chooser seperti Google (tanpa backend).</p>
+
+    <div>
+      <button id="login-btn">
+        <span class="icon">F</span>
+        Login with FakeAuth
+      </button>
+      <button id="logout-btn">Logout</button>
+    </div>
+
+    <div class="user-info">
+      <div class="label">Current user</div>
+      <div id="user-text">Not logged in</div>
+    </div>
+
+    <div id="error" class="error"></div>
+  </div>
+
+  <script src="sdk.js"></script>
+  <script>
+    const AUTH_BASE_URL = window.location.origin + "/auth-provider.html";
+    const REDIRECT_URI = window.location.origin + "/callback.html";
+    const USER_KEY = "fakeauth_current_user";
+
+    const loginBtn = document.getElementById("login-btn");
+    const logoutBtn = document.getElementById("logout-btn");
+    const userText = document.getElementById("user-text");
+    const errorEl = document.getElementById("error");
+
+    function saveUser(user) {
+      if (!user) {
+        localStorage.removeItem(USER_KEY);
+      } else {
+        localStorage.setItem(USER_KEY, JSON.stringify(user));
+      }
+    }
+
+    function loadUser() {
+      try {
+        const raw = localStorage.getItem(USER_KEY);
+        if (!raw) return null;
+        return JSON.parse(raw);
+      } catch {
+        return null;
+      }
+    }
+
+    function renderUser() {
+      const user = loadUser();
+      if (!user) {
+        userText.textContent = "Not logged in";
+      } else {
+        userText.textContent = user.name + " (sub: " + user.sub + ")";
+      }
+    }
+
+    FakeAuth.init({
+      authBaseUrl: AUTH_BASE_URL,
+      redirectUri: REDIRECT_URI
+    });
+
+    loginBtn.addEventListener("click", () => {
+      errorEl.textContent = "";
+      FakeAuth.login()
+        .then(result => {
+          saveUser(result.user);
+          renderUser();
+        })
+        .catch(err => {
+          errorEl.textContent = err.message;
+        });
+    });
+
+    logoutBtn.addEventListener("click", () => {
+      saveUser(null);
+      renderUser();
+    });
+
+    renderUser();
+  </script>
+</body>
+</html>

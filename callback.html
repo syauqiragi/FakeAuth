@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>FakeAuth Callback</title>
+</head>
+<body>
+  <script>
+    function parseHash() {
+      const hash = window.location.hash.startsWith("#")
+        ? window.location.hash.substring(1)
+        : window.location.hash;
+      const params = new URLSearchParams(hash);
+      return {
+        idToken: params.get("id_token"),
+        state: params.get("state")
+      };
+    }
+
+    function decodeIdToken(idToken) {
+      try {
+        const json = atob(idToken);
+        return JSON.parse(json);
+      } catch (e) {
+        return null;
+      }
+    }
+
+    (function () {
+      const { idToken } = parseHash();
+      if (!window.opener) {
+        document.body.innerText = "No opener window. This callback is intended to be opened via popup.";
+        return;
+      }
+
+      if (!idToken) {
+        window.opener.postMessage({
+          type: "FAKEAUTH_RESULT",
+          error: "id_token tidak ditemukan"
+        }, "*");
+        return;
+      }
+
+      const payload = decodeIdToken(idToken);
+      if (!payload) {
+        window.opener.postMessage({
+          type: "FAKEAUTH_RESULT",
+          error: "id_token invalid"
+        }, "*");
+        return;
+      }
+
+      window.opener.postMessage({
+        type: "FAKEAUTH_RESULT",
+        idToken: idToken,
+        user: {
+          sub: payload.sub,
+          name: payload.name
+        }
+      }, "*");
+    })();
+  </script>
+</body>
+</html>
