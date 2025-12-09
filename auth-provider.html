@@ -25,9 +25,15 @@
       font-size: 20px;
     }
     .subtitle {
-      margin: 0 0 16px 0;
+      margin: 0 0 8px 0;
       font-size: 13px;
       color: #6b7280;
+    }
+    .redirect-info {
+      font-size: 11px;
+      color: #9ca3af;
+      margin-bottom: 12px;
+      word-break: break-all;
     }
     .section-title {
       font-size: 13px;
@@ -171,6 +177,10 @@
   <div class="card">
     <h1>FakeAuth</h1>
     <p class="subtitle">Multi-account login ala Google (dipakai oleh iOS SDK dan Web SDK).</p>
+    <!-- 💡 info redirect_uri + state -->
+    <div id="redirect-info" class="redirect-info">
+      <!-- akan diisi via JS -->
+    </div>
 
     <div id="choose-section">
       <div class="section-title">Choose an account</div>
@@ -193,7 +203,7 @@
       <div id="error" class="error"></div>
       <div class="small">
         Setelah login / pilih account, kami akan redirect ke
-        <code>redirect_uri</code> dengan <code>id_token</code> di URL hash.
+        <code>redirect_uri</code> dengan <code>id_token</code> di query (?id_token=...&state=...).
       </div>
     </form>
   </div>
@@ -234,7 +244,7 @@
         existing.lastUsedAt = now;
       } else {
         list.push({
-          id: normalized,        // di real world ini biasanya id unik
+          id: normalized,
           username: normalized,
           lastUsedAt: now
         });
@@ -266,9 +276,9 @@
       const { redirectUri, state } = getQueryParams();
       const errorEl = document.getElementById("error");
 
-  console.log("completeLogin redirectUri =", redirectUri);
-  console.log("completeLogin state =", state);
-  
+      console.log("completeLogin redirectUri =", redirectUri);
+      console.log("completeLogin state =", state);
+
       if (!redirectUri) {
         errorEl.textContent = "redirect_uri tidak ada. Harus dikirim oleh client (iOS/Web).";
         return;
@@ -285,7 +295,9 @@
         "?id_token=" + encodeURIComponent(idToken) +
         "&state=" + encodeURIComponent(state || "");
 
-      // ⬇️ Ini yang akan ditangkap oleh:
+      console.log("Redirecting to:", redirectUrl);
+
+      // ⬇️ Ini akan ditangkap oleh:
       // - Web (via callback.html + postMessage)
       // - iOS (via ASWebAuthenticationSession)
       window.location.href = redirectUrl;
@@ -352,6 +364,18 @@
       const useAnotherBtn = document.getElementById("use-another-btn");
       const clearAllBtn = document.getElementById("clear-all-btn");
       const accountsContainer = document.getElementById("accounts-container");
+      const redirectInfoEl = document.getElementById("redirect-info");
+
+      // Tampilkan redirect_uri & state yang diterima
+      const { redirectUri, state } = getQueryParams();
+      console.log("Loaded redirectUri =", redirectUri);
+      console.log("Loaded state =", state);
+
+      if (redirectUri) {
+        redirectInfoEl.textContent = `redirect_uri: ${redirectUri} | state: ${state || "(kosong)"}`;
+      } else {
+        redirectInfoEl.textContent = "redirect_uri: (TIDAK ADA / NULL) — client belum mengirim parameter ini.";
+      }
 
       renderAccounts();
 
@@ -367,7 +391,7 @@
         }
 
         upsertAccount(username);
-        completeLogin(username); // 🔥 langsung callback ke redirect_uri
+        completeLogin(username);
       });
 
       useAnotherBtn.addEventListener("click", function () {
@@ -397,8 +421,8 @@
 
         const username = btn.dataset.username;
         if (username) {
-          upsertAccount(username); // update lastUsedAt
-          completeLogin(username); // 🔥 langsung callback ke SDK (redirect_uri)
+          upsertAccount(username);
+          completeLogin(username);
         }
       });
     });
