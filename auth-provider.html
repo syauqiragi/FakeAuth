@@ -266,6 +266,9 @@
       const { redirectUri, state } = getQueryParams();
       const errorEl = document.getElementById("error");
 
+  console.log("completeLogin redirectUri =", redirectUri);
+  console.log("completeLogin state =", state);
+  
       if (!redirectUri) {
         errorEl.textContent = "redirect_uri tidak ada. Harus dikirim oleh client (iOS/Web).";
         return;
