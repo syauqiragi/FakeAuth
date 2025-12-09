@@ -107,13 +107,29 @@
   <script src="sdk.js"></script>
   <script>
     const AUTH_BASE_URL = window.location.origin + "/auth-provider.html";
-    const REDIRECT_URI = window.location.origin + "/callback.html";
+    const REDIRECT_URI = getRedirectUri();
+    
     const USER_KEY = "fakeauth_current_user";
 
     const loginBtn = document.getElementById("login-btn");
     const logoutBtn = document.getElementById("logout-btn");
     const userText = document.getElementById("user-text");
     const errorEl = document.getElementById("error");
+
+    function getRedirectUri() {
+      const params = new URLSearchParams(window.location.search);
+      const override = params.get("redirect_uri");
+
+      if (override) {
+        console.log("Using override redirect_uri:", override);
+        return override; // iOS or external client can override redirect_uri
+      }
+
+      const fallback = window.location.origin + "/callback.html";
+      console.log("Using fallback redirect_uri:", fallback);
+      return fallback; // Web default
+    }
+
 
     function saveUser(user) {
       if (!user) {
