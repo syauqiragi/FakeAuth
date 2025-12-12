@@ -378,7 +378,9 @@
         redirectInfoEl.textContent = "redirect_uri: (TIDAK ADA / NULL) — client belum mengirim parameter ini.";
       }
 
-      upsertAccount(silentLoginUsername);
+      if (silentLoginUsername) {
+        upsertAccount(silentLoginUsername);
+      }
 
       renderAccounts();
 
