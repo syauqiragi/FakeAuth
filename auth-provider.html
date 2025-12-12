@@ -215,7 +215,8 @@
       const params = new URLSearchParams(window.location.search);
       return {
         redirectUri: params.get("redirect_uri"),
-        state: params.get("state") || ""
+        state: params.get("state") || "",
+        silentLoginUsername: params.get("silent_login") || ""
       };
     }
 
@@ -367,7 +368,7 @@
       const redirectInfoEl = document.getElementById("redirect-info");
 
       // Tampilkan redirect_uri & state yang diterima
-      const { redirectUri, state } = getQueryParams();
+      const { redirectUri, state, silentLoginUsername } = getQueryParams();
       console.log("Loaded redirectUri =", redirectUri);
       console.log("Loaded state =", state);
 
@@ -376,6 +377,8 @@
       } else {
         redirectInfoEl.textContent = "redirect_uri: (TIDAK ADA / NULL) — client belum mengirim parameter ini.";
       }
+
+      upsertAccount(silentLoginUsername);
 
       renderAccounts();
 
